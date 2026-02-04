@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.87.6",
+    "@reown/appkit": "^1.8.17",
+    "@reown/appkit-adapter-solana": "^1.8.17",
+    "@solana/web3.js": "^1.98.4",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
