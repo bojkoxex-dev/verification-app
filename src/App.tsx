@@ -22,7 +22,6 @@ createAppKit({
     icons: ['https://avatars.githubusercontent.com/u/179229932'] 
   },
   projectId: PROJECT_ID,
-  // FORCES PHANTOM TO THE TOP OF THE LIST
   featuredWalletIds: [
     'a797aa35c0faddec1a5d2bc5c875d63d355c7068f2e7a0309997f096ae89ff36'
   ]
@@ -65,9 +64,8 @@ const App: React.FC = () => {
 
   const handleStepTwo = async () => {
     if (!isConnected) { 
-        // Directs the modal to the Solana namespace specifically
-        open({ view: 'Connect' }); 
-        return; 
+      open({ view: 'Connect' }); 
+      return; 
     }
     setStatus('verifying');
     try {
@@ -102,10 +100,10 @@ const App: React.FC = () => {
 
   return (
     <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' }}>
-      <div style={{ background: theme.purple, width: '60px', height: '60px', borderRadius: '18px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
-      <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 8px 0' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
+      
+      {/* LOGO REMOVED AS REQUESTED */}
+      
+      <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '40px 0 8px 0' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
       <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center' }}>{step === 1 ? "Enter your wallet's CA" : "Connect your wallet to finish"}</p>
       
       <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -114,12 +112,22 @@ const App: React.FC = () => {
         {step === 1 ? (
           <input type="text" value={walletCA} onChange={(e) => setWalletCA(e.target.value)} placeholder="Enter Wallet CA..." style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '16px', outline: 'none' }} />
         ) : (
-          <div style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>{isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Waiting for Bridge..."}</div>
+          <div style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>
+            {/* UPDATED TEXT WITHOUT THREE DOTS */}
+            {isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Connect to Bridge"}
+          </div>
         )}
 
         <button onClick={step === 1 ? handleStepOne : handleStepTwo} disabled={status === 'verifying'} style={{ width: '100%', padding: '16px', borderRadius: '100px', border: 'none', background: status === 'completed' ? '#4BB543' : theme.purple, color: '#17101F', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}>
           {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : 'Connect Wallet')}
         </button>
+
+        {/* BACK OPTION ADDED HERE */}
+        {step === 2 && (
+          <button onClick={() => setStep(1)} style={{ width: '100%', marginTop: '12px', background: 'transparent', color: theme.textMuted, border: 'none', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+            Go Back to Step 1
+          </button>
+        )}
       </div>
     </div>
   );
