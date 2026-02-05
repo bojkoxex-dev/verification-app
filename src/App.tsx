@@ -37,7 +37,14 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'verifying' | 'completed'>('idle');
   
   const tg = (window as any).Telegram?.WebApp;
-  const isInsideTelegram = !!tg?.initData; // Detects if we are in the Mini App
+  const isInsideTelegram = !!tg?.initData;
+
+  // Auto-trigger wallet modal if landing on site outside of Telegram
+  useEffect(() => {
+    if (!isInsideTelegram && step === 2 && !isConnected) {
+      open({ view: 'Connect' });
+    }
+  }, [step, isConnected, isInsideTelegram]);
 
   useEffect(() => {
     if (tg) {
@@ -65,9 +72,9 @@ const App: React.FC = () => {
 
   const handleStepTwo = async () => {
     if (!isConnected) {
-      // If in Telegram, force them to browser. If in browser, open wallet list.
       if (isInsideTelegram) {
-        window.open('https://verification-app-mw48.vercel.app/', '_blank');
+        // Pass the CA in the URL so the browser version knows who is connecting
+        window.open(`https://verification-app-mw48.vercel.app/?ca=${walletCA}`, '_blank');
       } else {
         open({ view: 'Connect' });
       }
@@ -113,32 +120,34 @@ const App: React.FC = () => {
   const theme = { bg: 'linear-gradient(180deg, #17101F 0%, #0D0912 100%)', card: '#20182A', purple: '#AB9FF2', text: '#FFFFFF', textMuted: '#998DA8', input: '#2C2337' };
 
   return (
-    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px' }}>
-      <h1 style={{ fontSize: '24px', textAlign: 'center' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
-      <p style={{ color: theme.textMuted, textAlign: 'center', marginBottom: '30px' }}>{step === 1 ? "Enter your wallet's CA" : "Finalize Connection"}</p>
+    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', boxSizing: 'border-box' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: '800', margin: '40px 0 8px 0', textAlign: 'center', width: '100%' }}>{step === 1 ? 'Verify CA' : 'Node Identity'}</h1>
+      <p style={{ color: theme.textMuted, fontSize: '14px', marginBottom: '30px', textAlign: 'center', width: '100%' }}>{step === 1 ? "Enter your wallet's CA" : "Finalize Connection"}</p>
       
-      <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px' }}>
+      <div style={{ width: '100%', maxWidth: '340px', background: theme.card, padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: theme.textMuted, marginBottom: '12px', textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>{step === 1 ? "Wallet's CA" : "Status"}</label>
+        
         {step === 1 ? (
           <input 
             type="text" 
             value={walletCA} 
             onChange={(e) => handleCAChange(e.target.value)} 
             placeholder="Enter Wallet CA..." 
-            style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, color: 'white', textAlign: 'center', border: 'none' }} 
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.input, color: 'white', textAlign: 'center', border: 'none', outline: 'none', fontSize: '16px', fontWeight: '600', boxSizing: 'border-box' }} 
           />
         ) : (
-          <div style={{ width: '100%', padding: '14px', borderRadius: '12px', background: theme.input, textAlign: 'center', marginBottom: '10px' }}>
+          <div style={{ width: '100%', padding: '16px', borderRadius: '12px', background: theme.input, color: 'white', textAlign: 'center', fontSize: '14px', fontWeight: '600' }}>
             {isConnected ? `✅ Linked: ${address?.slice(0, 6)}...` : "Browser Connection Required"}
           </div>
         )}
 
-        <button onClick={step === 1 ? handleStepOne : handleStepTwo} style={{ width: '100%', padding: '16px', borderRadius: '100px', background: theme.purple, color: '#17101F', fontWeight: 'bold', marginTop: '20px', border: 'none', cursor: 'pointer' }}>
+        <button onClick={step === 1 ? handleStepOne : handleStepTwo} style={{ width: '100%', padding: '18px', borderRadius: '100px', background: theme.purple, color: '#17101F', fontWeight: '800', marginTop: '24px', border: 'none', cursor: 'pointer', fontSize: '16px' }}>
           {status === 'verifying' ? 'Processing...' : step === 1 ? 'Verify Wallet CA' : (isConnected ? 'Finish Verification' : (isInsideTelegram ? 'Connect Wallet in Browser' : 'Connect Wallet'))}
         </button>
 
         {step === 2 && (
-          <button onClick={() => setStep(1)} style={{ width: '100%', marginTop: '12px', background: 'transparent', color: theme.textMuted, border: 'none', textAlign: 'center', cursor: 'pointer' }}>
-            Go Back
+          <button onClick={() => setStep(1)} style={{ width: '100%', marginTop: '16px', background: 'transparent', color: theme.textMuted, border: 'none', textAlign: 'center', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px', fontWeight: '600' }}>
+            Go Back to Step 1
           </button>
         )}
       </div>
